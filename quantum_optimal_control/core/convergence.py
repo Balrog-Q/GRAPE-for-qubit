@@ -7,7 +7,7 @@ from quantum_optimal_control.helper_functions.grape_functions import sort_ev
 
 class Convergence:
     
-    def __init__(self,sys_para,time_unit,convergence):
+    def __init__(self, sys_para, time_unit, convergence):
         # paramters
         self.sys_para = sys_para
         self.time_unit = time_unit
@@ -47,8 +47,8 @@ class Convergence:
         else:
             self.min_grad = 1e-25
 
-
         self.reset_convergence()
+
         if self.sys_para.show_plots:
             plt.figure()
     
@@ -70,7 +70,6 @@ class Convergence:
         self.concerned = self.sys_para.states_concerned_list
         self.last_cost = last_cost
         self.last_reg_cost = last_reg_cost
-          
         self.anly = anly
         self.save_evol(anly)
         self.plot_summary()
@@ -80,22 +79,21 @@ class Convergence:
         self.reg_costs.append(self.last_reg_cost)
         self.iterations.append(self.last_iter)
         self.last_iter += self.update_step
- 
     
     def plot_inter_vecs_general(self, pop_inter_vecs, start):
         # plot state evolution
         if self.sys_para.draw_list != []:
             for kk in range(len(self.sys_para.draw_list)):
                 plt.plot(np.array([self.sys_para.dt * ii for ii in range(self.sys_para.steps + 1)]), np.array(pop_inter_vecs[self.sys_para.draw_list[kk],:]), label=self.sys_para.draw_names[kk])
-        
         else:
-            if start  > 4:
+            if start > 4:
                 plt.plot(np.array([self.sys_para.dt * ii for ii in range(self.sys_para.steps + 1)]), np.array(pop_inter_vecs[start,:]), label='Starting level ' + str(start))
                 
             for jj in range(4):
                 plt.plot(np.array([self.sys_para.dt * ii for ii in range(self.sys_para.steps + 1)]), np.array(pop_inter_vecs[jj,:]), label='level ' + str(jj))
             
         forbidden = np.zeros(self.sys_para.steps + 1)
+
         if 'states_forbidden_list' in self.sys_para.reg_coeffs:
             # summing all population of forbidden states
             for forbid in self.sys_para.reg_coeffs['states_forbidden_list']:
@@ -106,15 +104,14 @@ class Convergence:
                     dressed_vec = np.dot(v_sorted, np.sqrt(pop_inter_vecs))
                     forbidden = forbidden + np.array(np.square(np.abs(dressed_vec[forbid,:])))
                     
-            plt.plot(np.array([self.sys_para.dt* ii for ii in range(self.sys_para.steps+1)]), forbidden,label='forbidden',linestyle='--',linewidth=4)
+            plt.plot(np.array([self.sys_para.dt * ii for ii in range(self.sys_para.steps+1)]), forbidden, label='forbidden', linestyle='--', linewidth=4)
         
         plt.ylabel('Population')
-        plt.ylim(-0.1,1.1)
-        plt.xlabel('Time ('+ self.time_unit+')')
+        plt.ylim(-0.1, 1.1)
+        plt.xlabel('Time (' + self.time_unit + ')')
         plt.legend(ncol=7)
   
     def plot_summary(self):
-
         # plotting data
         if not self.last_iter == 0:
             self.runtime = time.time() - self.start_time
@@ -136,11 +133,11 @@ class Convergence:
 
         ## cost
         if self.sys_para.show_plots == True:
-            plt.subplot(gs[index, :], title = 'Error = %1.2e; Other errors = %1.2e; Unitary Metric: %.5f; Runtime: %.1fs; Estimated Remaining Runtime: %.1fh' % (self.last_cost, 
-                                                                                                                                                                 self.last_reg_cost - self.last_cost, 
-                                                                                                                                                                 self.anly.tf_unitary_scale.eval(), 
-                                                                                                                                                                 self.runtime, 
-                                                                                                                                                                 self.estimated_runtime))
+            plt.subplot(gs[index, :], title='Error = %1.2e; Other errors = %1.2e; Unitary Metric: %.5f; Runtime: %.1fs; Estimated Remaining Runtime: %.1fh' % (self.last_cost, 
+                                                                                                                                                               self.last_reg_cost - self.last_cost, 
+                                                                                                                                                               self.anly.tf_unitary_scale.eval(), 
+                                                                                                                                                               self.runtime, 
+                                                                                                                                                               self.estimated_runtime))
             index += 1
             plt.plot(np.array(self.iterations), np.array(self.costs), 'bx-', label='Fidelity Error')
             plt.plot(np.array(self.iterations), np.array(self.reg_costs), 'go-', label='All Penalties')
@@ -172,10 +169,10 @@ class Convergence:
         ## operators
         plt.subplot(gs[index, :], title="Simulation Weights")
         ops_weight = self.anly.get_ops_weight()
-            
+
         for jj in range (self.sys_para.ops_len):
             plt.plot(np.array([self.sys_para.dt * ii for ii in range(self.sys_para.steps)]), np.array(self.sys_para.ops_max_amp[jj] * ops_weight[jj,:]), label='u' + self.sys_para.Hnames[jj])
-        
+
         ## Control Fields
         plt.title('Optimized pulse')
         plt.ylabel('Amplitude')
@@ -189,7 +186,7 @@ class Convergence:
             inter_vecs_array = np.array(inter_vecs)
 
             for ii in range(len(self.concerned)):
-                plt.subplot(gs[index + ii, :], title="Evolution")
+                plt.subplot(gs[index + ii,:], title="Evolution")
                 pop_inter_vecs = inter_vecs[ii]
                 self.plot_inter_vecs_general(pop_inter_vecs, self.concerned[ii])
         

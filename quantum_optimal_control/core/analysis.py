@@ -31,23 +31,20 @@ class Analysis:
         ops_weight = self.tf_ops_weight.eval()
         return ops_weight
     
-    
     def get_inter_vecs(self):
-
         # get propagated states at each time step
         if not self.sys_para.use_inter_vecs:
             return None
         
         state_num = self.sys_para.state_num
         inter_vecs_mag_squared = []
-        
         inter_vecs_real = []
         inter_vecs_imag = []
         
         if self.sys_para.is_dressed:
-            v_sorted=sort_ev(self.sys_para.v_c,self.sys_para.dressed_id)
+            v_sorted = sort_ev(self.sys_para.v_c, self.sys_para.dressed_id)
             
-        ii=0
+        ii = 0
         inter_vecs = tf.stack(self.tf_inter_vecs).eval()
         
         for inter_vec in inter_vecs:
@@ -70,6 +67,6 @@ class Analysis:
             inter_vecs_mag_squared.append(inter_vec_mag_squared)
             inter_vecs_real.append(inter_vec_real)
             inter_vecs_imag.append(inter_vec_imag)
-            ii+=1
+            ii += 1
         
         return inter_vecs_mag_squared

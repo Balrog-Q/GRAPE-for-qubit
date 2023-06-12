@@ -73,7 +73,7 @@ def Grape(H0, Hops, Hnames, U, total_time, steps,
         tfs = TensorflowState(sys_para) # create tensorflow graph
         graph = tfs.build_graph()
 
-    conv = Convergence(sys_para,time_unit, convergence)
+    conv = Convergence(sys_para, time_unit, convergence)
     
     # run the optimization
     try:
