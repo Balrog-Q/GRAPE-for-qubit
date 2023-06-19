@@ -4,8 +4,6 @@ import json
 import datetime
 import sys
 
-dt = h5py.special_dtype(vlen=str)
-
 class H5File(h5py.File):
     def __init__(self, *args, **kwargs):
         h5py.File.__init__(self, *args, **kwargs)
@@ -14,6 +12,7 @@ class H5File(h5py.File):
     def add(self, key, data):
         data = np.array(data)
         data = data[np.newaxis]
+        dt = h5py.special_dtype(vlen=str)
         
         try:
             self.create_dataset(key,
@@ -32,6 +31,7 @@ class H5File(h5py.File):
     def append(self, key, data, forceInit=False):
         data = np.array(data)
         data = data[np.newaxis]
+        dt = h5py.special_dtype(vlen=str)
                             
         try:
             self.create_dataset(key,
