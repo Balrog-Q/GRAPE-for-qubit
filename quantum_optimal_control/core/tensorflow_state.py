@@ -9,7 +9,7 @@ from tensorflow.python.framework import ops
 
 class TensorflowState:
     
-    def __init__(self,sys_para):
+    def __init__(self, sys_para):
         self.sys_para = sys_para
     
     def init_defined_functions(self):
@@ -18,7 +18,7 @@ class TensorflowState:
         taylor_terms = self.sys_para.exp_terms 
         scaling = self.sys_para.scaling
         
-        def get_matexp(uks,H_all):
+        def get_matexp(uks, H_all):
             # matrix exponential
             I = H_all[input_num]
             matexp = I
@@ -43,12 +43,12 @@ class TensorflowState:
             return matexp
         
         @function.Defun(tf.float32, tf.float32, tf.float32)
-        def matexp_op_grad(uks,H_all, grad):  
+        def matexp_op_grad(uks, H_all, grad):  
             # gradient of matrix exponential
             coeff_grad = []
             coeff_grad.append(tf.constant(0, dtype=tf.float32))
             # get output of the function
-            matexp = get_matexp(uks,H_all)
+            matexp = get_matexp(uks, H_all)
 
             for ii in range(1,input_num):
                 coeff_grad.append(tf.reduce_sum(tf.multiply(grad, tf.matmul(H_all[ii], 

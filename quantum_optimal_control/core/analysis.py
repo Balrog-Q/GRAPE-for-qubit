@@ -1,7 +1,9 @@
 import numpy as np
-from quantum_optimal_control.helper_functions.grape_functions import sort_ev,get_state_index
 import os
 import tensorflow as tf
+
+from quantum_optimal_control.helper_functions.grape_functions import sort_ev,get_state_index
+from quantum_optimal_control.helper_functions.data_management import H5File
 
 class Analysis:
     
@@ -13,7 +15,7 @@ class Analysis:
         self.tf_inter_vecs = tf_inter_vecs
         self.this_dir = os.path.dirname(__file__)
         
-    def RtoCMat(self,M):
+    def RtoCMat(self, M):
         # real to complex matrix isomorphism
         state_num = self.sys_para.state_num
         M_real = M[:state_num,:state_num]
@@ -24,6 +26,11 @@ class Analysis:
         # get final evolved unitary state
         M = self.tf_final_state.eval()
         CMat = self.RtoCMat(M)
+
+        if self.sys_para.save and save:
+            with H5File(self.sys_para.file_path, 'a') as hf:
+                hf.append('final_state', np.array(M))
+
         return CMat
         
     def get_ops_weight(self):
@@ -46,6 +53,11 @@ class Analysis:
             
         ii = 0
         inter_vecs = tf.stack(self.tf_inter_vecs).eval()
+
+        if self.sys_para.save:
+            with H5File(self.sys_para.file_path, 'a') as hf:
+                hf.append('inter_vecs_raw_real', np.array(inter_vecs[:,0:state_num,:]))
+                hf.append('inter_vecs_raw_imag', np.array(inter_vecs[:,state_num:2 * state_num,:]))
         
         for inter_vec in inter_vecs:
             inter_vec_real = (inter_vec[0:state_num,:])
@@ -57,16 +69,20 @@ class Analysis:
                 inter_vec_mag_squared = np.square(np.abs(dressed_vec_c))
                 inter_vec_real = np.real(dressed_vec_c)
                 inter_vec_imag = np.imag(dressed_vec_c)
-                
             else:
                 inter_vec_mag_squared = np.square(np.abs(inter_vec_c))
                 inter_vec_real = np.real(inter_vec_c)
                 inter_vec_imag = np.imag(inter_vec_c)
                 
-                
             inter_vecs_mag_squared.append(inter_vec_mag_squared)
             inter_vecs_real.append(inter_vec_real)
             inter_vecs_imag.append(inter_vec_imag)
             ii += 1
+        
+        if self.sys_para.save:
+            with H5File(self.sys_para.file_path, 'a') as hf:
+                hf.append('inter_vecs_mag_squared', np.array(inter_vecs_mag_squared))
+                hf.append('inter_vecs_real', np.array(inter_vecs_real))
+                hf.append('inter_vecs_imag', np.array(inter_vecs_imag))
         
         return inter_vecs_mag_squared

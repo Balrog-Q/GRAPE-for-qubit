@@ -60,7 +60,7 @@ class Convergence:
         self.last_iter = 0
         self.accumulate_rate = 1.00
         
-    def save_evol(self,anly):
+    def save_evol(self, anly):
         if self.sys_para.state_transfer == False:
             self.final_state = anly.get_final_state()
             
@@ -104,7 +104,7 @@ class Convergence:
                     dressed_vec = np.dot(v_sorted, np.sqrt(pop_inter_vecs))
                     forbidden = forbidden + np.array(np.square(np.abs(dressed_vec[forbid,:])))
                     
-            plt.plot(np.array([self.sys_para.dt * ii for ii in range(self.sys_para.steps+1)]), forbidden, label='forbidden', linestyle='--', linewidth=4)
+            plt.plot(np.array([self.sys_para.dt * ii for ii in range(self.sys_para.steps + 1)]), forbidden, label='forbidden', linestyle='--', linewidth=4)
         
         plt.ylabel('Population')
         plt.ylim(-0.1, 1.1)
@@ -133,7 +133,7 @@ class Convergence:
 
         ## cost
         if self.sys_para.show_plots == True:
-            plt.subplot(gs[index, :], title='Error = %1.2e; Other errors = %1.2e; Unitary Metric: %.5f; Runtime: %.1fs; Estimated Remaining Runtime: %.1fh' % (self.last_cost, 
+            plt.subplot(gs[index,:], title='Error = %1.2e; Other errors = %1.2e; Unitary Metric: %.5f; Runtime: %.1fs; Estimated Remaining Runtime: %.1fh' % (self.last_cost, 
                                                                                                                                                                self.last_reg_cost - self.last_cost, 
                                                                                                                                                                self.anly.tf_unitary_scale.eval(), 
                                                                                                                                                                self.runtime, 
@@ -167,7 +167,7 @@ class Convergence:
             index += 1
         
         ## operators
-        plt.subplot(gs[index, :], title="Simulation Weights")
+        plt.subplot(gs[index,:], title="Simulation Weights")
         ops_weight = self.anly.get_ops_weight()
 
         for jj in range (self.sys_para.ops_len):

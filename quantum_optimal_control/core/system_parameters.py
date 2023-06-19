@@ -3,6 +3,8 @@ import scipy.linalg as la
 from quantum_optimal_control.helper_functions.grape_functions import c_to_r_mat
 from quantum_optimal_control.helper_functions.grape_functions import c_to_r_vec
 from quantum_optimal_control.helper_functions.grape_functions import get_state_index
+from quantum_optimal_control.helper_functions.data_management import H5File
+
 from scipy.special import factorial
 
 class SystemParameters:
@@ -10,8 +12,10 @@ class SystemParameters:
     def __init__(self, H0, Hops, Hnames, U, U0, total_time, steps, 
                  states_concerned_list, dressed_info, maxA, 
                  draw, initial_guess, show_plots, Unitary_error, 
-                 state_transfer, no_scaling, reg_coeffs, save, Taylor_terms, 
-                 use_gpu, use_inter_vecs, sparse_H, sparse_U, sparse_K):
+                 state_transfer, no_scaling, reg_coeffs, 
+                 save, file_path, 
+                 Taylor_terms, use_gpu, use_inter_vecs, 
+                 sparse_H, sparse_U, sparse_K):
         # Input variable
         self.sparse_U = sparse_U
         self.sparse_H = sparse_H
@@ -21,6 +25,7 @@ class SystemParameters:
         self.Taylor_terms = Taylor_terms
         self.dressed_info = dressed_info
         self.reg_coeffs = reg_coeffs
+        self.file_path = file_path
         self.state_transfer = state_transfer
         self.no_scaling = no_scaling
         self.save = save
@@ -32,7 +37,7 @@ class SystemParameters:
         self.total_time = total_time
         self.steps = steps
         self.show_plots = show_plots
-        self.Unitary_error= Unitary_error
+        self.Unitary_error = Unitary_error
 
         if initial_guess is not None:
             # transform initial_guess to its corresponding base value
@@ -44,9 +49,10 @@ class SystemParameters:
 
                 if max(self.u0_base[ii]) > 1.0:
                     raise ValueError('Initial guess has strength > max_amp for op %d' % (ii) )
+                
             self.u0_base = np.arcsin(self.u0_base) #because we take the sin of weights later
         else:
-            self.u0 =[]
+            self.u0 = []
 
         self.states_concerned_list = states_concerned_list
         self.is_dressed = False
@@ -56,7 +62,7 @@ class SystemParameters:
         if self.state_transfer == False:
             self.target_unitary = c_to_r_mat(U)
         else:
-            self.target_vectors=[]
+            self.target_vectors = []
 
             for target_vector_c in U:
                 self.target_vector = c_to_r_vec(target_vector_c)
@@ -75,7 +81,7 @@ class SystemParameters:
             self.w_c = dressed_info['eigenvalues']
             self.is_dressed = dressed_info['is_dressed']
             self.H0_diag = np.diag(self.w_c)
-            
+        
         self.init_system()
         self.init_vectors()
         self.init_operators()
@@ -91,14 +97,14 @@ class SystemParameters:
         for ii in range(1,exp_t):
             factorial *= ii
             Mt = np.dot(Mt, M)
-            U += Mt / ((2.**float(ii*scaling_terms)) * factorial)
+            U += Mt / ((2.**float(ii * scaling_terms)) * factorial)
 
         for ii in range(scaling_terms):
             U = np.dot(U, U)
         
         return U
     
-    def approx_exp(self,M,exp_t, scaling_terms): 
+    def approx_exp(self, M, exp_t, scaling_terms): 
         # the scaling and squaring of matrix exponential with taylor expansions
         U = 1.0
         Mt = 1.0
@@ -110,7 +116,7 @@ class SystemParameters:
             U += Mt / ((2.**float(ii * scaling_terms)) * factorial)
 
         for ii in range(scaling_terms):
-            U=np.dot(U,U)
+            U = np.dot(U,U)
 
         return U
     
@@ -120,7 +126,7 @@ class SystemParameters:
         H = self.H0_c
         U_f = self.U0_c
 
-        for ii in range (len(self.ops_c)):
+        for ii in range(len(self.ops_c)):
             H = H + self.ops_max_amp[ii] * self.ops_c[ii]
 
         if d == 0:
@@ -133,7 +139,7 @@ class SystemParameters:
 
         while True:
             if len(self.H0_c) < 10:
-                for ii in range (self.steps):
+                for ii in range(self.steps):
                     U_f = np.dot(U_f, self.approx_expm((0 - 1j) * self.dt * H, exp_t, self.scaling))
 
                 Metric = np.abs(np.trace(np.dot(np.conjugate(np.transpose(U_f)), U_f))) / (self.state_num)
@@ -173,6 +179,10 @@ class SystemParameters:
             self.initial_vectors_c.append(self.initial_vector_c)
             self.initial_vector = c_to_r_vec(self.initial_vector_c)
             self.initial_vectors.append(self.initial_vector)
+        
+        if self.save:
+            with H5File(self.file_path, 'a') as hf:
+                hf.add('initial_vectors_c', data=self.initial_vectors_c)
 
     def init_operators(self):
         # Create operator matrix in numpy array
@@ -195,6 +205,7 @@ class SystemParameters:
                 comparisons = 6
 
             d = 0
+
             while comparisons > 0:
                 self.exp_terms = self.Choose_exp_terms(d)
                 self.exps.append(self.exp_terms)
@@ -209,6 +220,11 @@ class SystemParameters:
         else:
             self.exp_terms = self.Taylor_terms[0]
             self.scaling = self.Taylor_terms[1]
+        
+        if self.save:
+            with H5File(self.file_path, 'a') as hf:
+                hf.add('taylor_terms', data=self.exp_terms)
+                hf.add('taylor_scaling', data=self.scaling)
         
         print("Using " + str(self.exp_terms) + " Taylor terms and " + str(self.scaling) + " Scaling & Squaring terms")
         i_array = np.eye(2 * self.state_num)
@@ -242,17 +258,17 @@ class SystemParameters:
         self.one_minus_gauss = np.array(one_minus_gauss)
 
 
-    def gaussian(self, x, mu = 0., sig = 1.):
+    def gaussian(self, x, mu=0., sig=1.):
         return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
     def init_guess(self):
         # initail guess for control field
         if self.u0 != []:
-            self.ops_weight_base = np.reshape(self.u0_base, [self.ops_len, self.steps])
+            self.ops_weight_base = np.reshape(self.u0_base, [self.ops_len,self.steps])
         else:
             initial_mean = 0
             index = 0
             initial_stddev = (1. / np.sqrt(self.steps))
-            self.ops_weight_base = np.random.normal(initial_mean, initial_stddev, [self.ops_len, self.steps])
+            self.ops_weight_base = np.random.normal(initial_mean, initial_stddev, [self.ops_len,self.steps])
         
         self.raw_shape = np.shape(self.ops_weight_base)

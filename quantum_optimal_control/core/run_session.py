@@ -3,7 +3,10 @@ import tensorflow as tf
 import os
 import time
 from scipy.optimize import minimize
+
 from analysis import Analysis
+
+from quantum_optimal_control.helper_functions.data_management import H5File
 
 class run_session:
     def __init__(self, tfs, graph, conv, sys_para, method, 
@@ -34,7 +37,7 @@ class run_session:
                 self.get_end_results()
             else:
                 if self.method != 'ADAM': #Any BFGS scheme
-                    self.bfgs_optimize(method = self.method)
+                    self.bfgs_optimize(method=self.method)
 
                 if self.method == 'ADAM':
                     self.start_adam_optimizer()    
@@ -70,6 +73,7 @@ class run_session:
             if (self.iterations % self.conv.evol_save_step == 0):
                 if not (self.sys_para.show_plots == True and (self.iterations % self.conv.update_step == 0)):
                     self.anly = Analysis(self.sys_para, self.tfs.final_state, self.tfs.ops_weight, self.tfs.unitary_scale, self.tfs.inter_vecs)
+
                     if not (self.iterations % self.conv.update_step == 0):
                         self.save_data()
 
@@ -104,18 +108,24 @@ class run_session:
 
         return uks    
 
-    def get_error(self,uks):
+    def get_error(self, uks):
         #get error and gradient for scipy bfgs:
         self.session.run(self.tfs.ops_weight_base.assign(uks))
         g, l, rl, metric, g_squared = self.session.run([self.tfs.grad_pack, self.tfs.loss, self.tfs.reg_loss, self.tfs.unitary_scale, self.tfs.grad_squared])
-        final_g = np.transpose(np.reshape(g,(len(self.sys_para.ops_c) * self.sys_para.steps)))
+        final_g = np.transpose(np.reshape(g, (len(self.sys_para.ops_c) * self.sys_para.steps)))
 
         return l, rl, final_g, metric, g_squared
     
     def save_data(self):
         if self.sys_para.save:
             self.elapsed = time.time() - self.start_time
-    
+            with H5File(self.sys_para.file_path, 'a') as hf:
+                hf.append('error', np.array(self.l))
+                hf.append('reg_error', np.array(self.rl))
+                hf.append('uks', np.array(self.Get_uks()))
+                hf.append('iteration', np.array(self.iterations))
+                hf.append('run_time', np.array(self.elapsed))
+                hf.append('unitary_scale', np.array(self.metric))
     
     def display(self):
         # display of simulation results
@@ -128,16 +138,16 @@ class run_session:
                                                                                                                self.g_squared, 
                                                                                                                self.metric))
     
-    def minimize_opt_fun(self,x):
+    def minimize_opt_fun(self, x):
         # minimization function called by scipy in each iteration
         self.l, self.rl, self.grads, self.metric, self.g_squared = self.get_error(np.reshape(x, (len(self.sys_para.ops_c), len(x) // len(self.sys_para.ops_c))))
         
-        if self.l <self.conv.conv_target :
-            self.conv_time = time.time()-self.start_time
+        if self.l < self.conv.conv_target :
+            self.conv_time = time.time() - self.start_time
             self.conv_iter = self.iterations
             self.end = True
             print('Target fidelity reached')
-            self.grads= 0*self.grads # set zero grads to terminate the scipy optimization
+            self.grads = 0 * self.grads # set zero grads to terminate the scipy optimization
         
         self.update_and_save()
         
@@ -156,8 +166,8 @@ class run_session:
         print("Starting " + self.method + " Optimization")
         self.start_time = time.time()
         x0 = self.sys_para.ops_weight_base
-        options={'maxfun' : self.conv.max_iterations,'gtol': self.conv.min_grad, 'disp':False,'maxls': 40}
-        res = minimize(self.minimize_opt_fun,x0,method=method,jac=jac,options=options)
+        options = {'maxfun': self.conv.max_iterations, 'gtol': self.conv.min_grad, 'disp': False, 'maxls': 40}
+        res = minimize(self.minimize_opt_fun, x0, method=method, jac=jac, options=options)
         uks = np.reshape(res['x'], (len(self.sys_para.ops_c), len(res['x']) // len(self.sys_para.ops_c)))
         print(self.method + ' optimization done')
         g, l, rl = self.session.run([self.tfs.grad_squared, self.tfs.loss, self.tfs.reg_loss])
