@@ -63,6 +63,29 @@ class run_session:
             self.feed_dict = {self.tfs.learning_rate:learning_rate}
             _ = self.session.run([self.tfs.optimizer], feed_dict=self.feed_dict)
 
+    def bfgs_optimize(self, method='L-BFGS-B', jac=True, options=None):
+        # scipy optimizer
+        self.conv.reset_convergence()
+        self.first = True
+        self.conv_time = 0.
+        self.conv_iter = 0
+        self.end = False
+        print("Starting " + self.method + " Optimization")
+        self.start_time = time.time()
+        x0 = self.sys_para.ops_weight_base
+        options = {'maxfun': self.conv.max_iterations, 'gtol': self.conv.min_grad, 'disp': False, 'maxls': 40}
+        res = minimize(self.minimize_opt_fun, x0, method=method, jac=jac, options=options)
+        uks = np.reshape(res['x'], (len(self.sys_para.ops_c), len(res['x']) // len(self.sys_para.ops_c)))
+        print(self.method + ' optimization done')
+        g, l, rl = self.session.run([self.tfs.grad_squared, self.tfs.loss, self.tfs.reg_loss])
+            
+        if self.sys_para.show_plots == False:
+            print(res.message)
+            print("Error = %1.2e" % l)
+            print ("Total time is " + str(time.time() - self.start_time))
+            
+        self.get_end_results()
+
     def update_and_save(self):
         if not self.end:
             if (self.iterations % self.conv.update_step == 0):
@@ -155,26 +178,3 @@ class run_session:
             return np.float64(self.rl), np.float64(np.transpose(self.grads))
         else:
             return self.rl, np.reshape(np.transpose(self.grads), [len(np.transpose(self.grads))])
-
-    def bfgs_optimize(self, method='L-BFGS-B', jac=True, options=None):
-        # scipy optimizer
-        self.conv.reset_convergence()
-        self.first = True
-        self.conv_time = 0.
-        self.conv_iter = 0
-        self.end = False
-        print("Starting " + self.method + " Optimization")
-        self.start_time = time.time()
-        x0 = self.sys_para.ops_weight_base
-        options = {'maxfun': self.conv.max_iterations, 'gtol': self.conv.min_grad, 'disp': False, 'maxls': 40}
-        res = minimize(self.minimize_opt_fun, x0, method=method, jac=jac, options=options)
-        uks = np.reshape(res['x'], (len(self.sys_para.ops_c), len(res['x']) // len(self.sys_para.ops_c)))
-        print(self.method + ' optimization done')
-        g, l, rl = self.session.run([self.tfs.grad_squared, self.tfs.loss, self.tfs.reg_loss])
-            
-        if self.sys_para.show_plots == False:
-            print(res.message)
-            print("Error = %1.2e" % l)
-            print ("Total time is " + str(time.time() - self.start_time))
-            
-        self.get_end_results()
