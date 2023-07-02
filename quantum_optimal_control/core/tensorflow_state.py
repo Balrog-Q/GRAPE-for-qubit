@@ -61,9 +61,9 @@ class TensorflowState:
         global matexp_op
         
         @function.Defun(tf.float32, tf.float32, grad_func=matexp_op_grad)                       
-        def matexp_op(uks,H_all):
+        def matexp_op(uks, H_all):
             # matrix exponential defun operator
-            matexp = get_matexp(uks,H_all)
+            matexp = get_matexp(uks, H_all)
 
             return matexp 
         
@@ -80,7 +80,7 @@ class TensorflowState:
             psi_n = psi
             factorial = 1.
 
-            for ii in range(1,taylor_terms):      
+            for ii in range(1, taylor_terms):      
                 factorial = factorial * ii
                 psi_n = tf.matmul(H, psi_n, a_is_sparse=self.sys_para.sparse_H, b_is_sparse=self.sys_para.sparse_K)
                 matvecexp = matvecexp + psi_n / factorial
@@ -93,7 +93,7 @@ class TensorflowState:
             coeff_grad = []
             coeff_grad.append(tf.constant(0, dtype=tf.float32))
             # get output of the function
-            matvecexp = get_matvecexp(uks,H_all,psi)
+            matvecexp = get_matvecexp(uks, H_all, psi)
             
             for ii in range(1, input_num):
                 coeff_grad.append(tf.reduce_sum(tf.multiply(grad, tf.matmul(H_all[ii],
@@ -121,7 +121,7 @@ class TensorflowState:
         global matvecexp_op
         
         @function.Defun(tf.float32, tf.float32, tf.float32, grad_func=matvecexp_op_grad)                       
-        def matvecexp_op(uks,H_all,psi):
+        def matvecexp_op(uks, H_all, psi):
             # matrix vector exponential defun operator
             matvecexp = get_matvecexp(uks, H_all, psi)
 
@@ -156,6 +156,7 @@ class TensorflowState:
         self.weights_unpacked = [self.H0_weight] #will collect all weights here
         self.ops_weight_base = tf.Variable(tf.constant(self.sys_para.ops_weight_base, dtype=tf.float32), dtype=tf.float32, name="weights_base")
         self.ops_weight = tf.sin(self.ops_weight_base, name="weights")
+
         for ii in range (self.sys_para.ops_len):
             self.weights_unpacked.append(self.sys_para.ops_max_amp[ii] * self.ops_weight[ii,:])
 
@@ -165,23 +166,24 @@ class TensorflowState:
                 
     def init_tf_inter_propagators(self):
         #initialize intermediate unitaries
-        self.inter_states = []    
+        self.inter_states = []
+
         for ii in range(self.sys_para.steps):
             self.inter_states.append(tf.zeros([2 * self.sys_para.state_num, 2 * self.sys_para.state_num], dtype=tf.float32, name="inter_state_" + str(ii)))
 
         print("Intermediate propagation variables initialized.")
             
-    def get_inter_state_op(self,layer):
+    def get_inter_state_op(self, layer):
         # build operator for intermediate state propagation
         # This function determines the nature of propagation
         propagator = matexp_op(self.H_weights[:,layer], self.tf_matrix_list)
-        
         return propagator    
         
     def init_tf_propagator(self):
         self.tf_matrix_list = tf.constant(self.sys_para.matrix_list, dtype=tf.float32)
         # build propagator for all the intermediate states
         tf_inter_state_op = []
+
         for ii in np.arange(0, self.sys_para.steps):
             tf_inter_state_op.append(self.get_inter_state_op(ii))
 
@@ -211,6 +213,7 @@ class TensorflowState:
         for ii in np.arange(0,self.sys_para.steps):               
             inter_vec = tf.matmul(self.inter_states[ii], self.packed_initial_vectors, name="inter_vec_" + str(ii))
             self.inter_vecs_list.append(inter_vec)
+
         self.inter_vecs_packed = tf.stack(self.inter_vecs_list, axis=1)
         self.inter_vecs = tf.unstack(self.inter_vecs_packed, axis=2)
         print("Vectors initialized.")
@@ -327,6 +330,7 @@ class TensorflowState:
     def build_graph(self):
         # graph building for the quantum optimal control
         graph = tf.Graph()
+
         with graph.as_default():
             print("Building graph:")
             self.init_defined_functions()
@@ -334,13 +338,16 @@ class TensorflowState:
             self.init_tf_vectors()
             self.init_tf_propagators()
             self.init_tf_ops_weight()
+
             if self.sys_para.state_transfer == False:
                 self.init_tf_inter_propagators()
                 self.init_tf_propagator()
+
                 if self.sys_para.use_inter_vecs:
                     self.init_tf_inter_vectors()
                 else:
                     self.inter_vecs = None
+
             else:
                 self.init_tf_inter_vector_state()
 

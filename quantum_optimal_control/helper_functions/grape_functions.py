@@ -46,7 +46,7 @@ def get_dressed_info(H0):
 def qft(N):
     # quantum fourier transform operator
     phase = 2.0j * np.pi / (2**N)
-    L, M = np.meshgrid(np.arange(2**N),np.arange(2**N))
+    L, M = np.meshgrid(np.arange(2**N), np.arange(2**N))
     L = np.exp(phase * (L * M))
     q = 1.0 / np.sqrt(2**N) * L
     return q

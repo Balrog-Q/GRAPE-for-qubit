@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import scipy.linalg as la
 from quantum_optimal_control.helper_functions.grape_functions import c_to_r_mat
 from quantum_optimal_control.helper_functions.grape_functions import c_to_r_vec
@@ -116,7 +117,7 @@ class SystemParameters:
             U += Mt / ((2.**float(ii * scaling_terms)) * factorial)
 
         for ii in range(scaling_terms):
-            U = np.dot(U,U)
+            U = np.dot(U, U)
 
         return U
     
@@ -269,6 +270,16 @@ class SystemParameters:
             initial_mean = 0
             index = 0
             initial_stddev = (1. / np.sqrt(self.steps))
-            self.ops_weight_base = np.random.normal(initial_mean, initial_stddev, [self.ops_len,self.steps])
+            # self.ops_weight_base = np.random.normal(initial_mean, initial_stddev, [self.ops_len,self.steps])
+            A = 0.8
+            sigma = self.total_time / 4
+            self.ops_weight_base = np.zeros([1,self.steps])
+            for i in range(self.steps):
+                temp = A * (np.exp(-(i * self.dt - self.total_time / 2)**2 / (2 * sigma**2))) * (1 + 0.01 * (0.5 - float(random.choice([0,1]))))
+                self.ops_weight_base[0][i] = float(temp)
         
         self.raw_shape = np.shape(self.ops_weight_base)
+        
+        # if self.save:
+        #     with H5File(self.file_path, 'a') as hf:
+        #         hf.add('initial_ops_weight', data=self.ops_weight_base)

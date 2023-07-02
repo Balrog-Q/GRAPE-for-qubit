@@ -77,11 +77,11 @@ class run_session:
         res = minimize(self.minimize_opt_fun, x0, method=method, jac=jac, options=options)
         uks = np.reshape(res['x'], (len(self.sys_para.ops_c), len(res['x']) // len(self.sys_para.ops_c)))
         print(self.method + ' optimization done')
-        g, l, rl = self.session.run([self.tfs.grad_squared, self.tfs.loss, self.tfs.reg_loss])
+        self.g, self.l, self.rl = self.session.run([self.tfs.grad_squared, self.tfs.loss, self.tfs.reg_loss])
             
         if self.sys_para.show_plots == False:
             print(res.message)
-            print("Error = %1.2e" % l)
+            print("Error = %1.2e" % self.l)
             print ("Total time is " + str(time.time() - self.start_time))
             
         self.get_end_results()
