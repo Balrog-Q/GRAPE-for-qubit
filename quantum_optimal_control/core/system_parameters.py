@@ -280,6 +280,6 @@ class SystemParameters:
         
         self.raw_shape = np.shape(self.ops_weight_base)
         
-        # if self.save:
-        #     with H5File(self.file_path, 'a') as hf:
-        #         hf.add('initial_ops_weight', data=self.ops_weight_base)
+        if self.save:
+            with H5File(self.file_path, 'a') as hf:
+                hf.add('initial_ops_weight', data=self.ops_weight_base)
