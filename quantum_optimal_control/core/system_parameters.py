@@ -265,18 +265,19 @@ class SystemParameters:
     def init_guess(self):
         # initail guess for control field
         if self.u0 != []:
-            self.ops_weight_base = np.reshape(self.u0_base, [self.ops_len,self.steps])
+            self.ops_weight_base = np.reshape(self.u0_base, [self.ops_len, self.steps])
         else:
-            initial_mean = 0
-            index = 0
-            initial_stddev = (1. / np.sqrt(self.steps))
-            # self.ops_weight_base = np.random.normal(initial_mean, initial_stddev, [self.ops_len,self.steps])
+            # initial_mean = 0
+            # index = 0
+            # initial_stddev = (1. / np.sqrt(self.steps))
+            # self.ops_weight_base = np.random.normal(initial_mean, initial_stddev, [self.ops_len, self.steps])
             A = 0.8
             sigma = self.total_time / 4
             self.ops_weight_base = np.zeros([1,self.steps])
             for i in range(self.steps):
                 temp = A * (np.exp(-(i * self.dt - self.total_time / 2)**2 / (2 * sigma**2))) * (1 + 0.01 * (0.5 - float(random.choice([0,1]))))
                 self.ops_weight_base[0][i] = float(temp)
+            
         
         self.raw_shape = np.shape(self.ops_weight_base)
         
