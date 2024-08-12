@@ -278,7 +278,6 @@ class SystemParameters:
                 temp = A * (np.exp(-(i * self.dt - self.total_time / 2)**2 / (2 * sigma**2))) * (1 + 0.01 * (0.5 - float(random.choice([0,1]))))
                 self.ops_weight_base[0][i] = float(temp)
             
-            self.ops_weight_base = self.ops_weight_base.flatten()
         
         self.raw_shape = np.shape(self.ops_weight_base)
         
