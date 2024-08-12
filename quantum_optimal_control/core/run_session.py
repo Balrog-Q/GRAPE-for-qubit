@@ -72,7 +72,7 @@ class run_session:
         self.end = False
         print("Starting " + self.method + " Optimization")
         self.start_time = time.time()
-        x0 = self.sys_para.ops_weight_base.flatten()s
+        x0 = self.sys_para.ops_weight_base.flatten()
         options = {'maxfun': self.conv.max_iterations, 'gtol': self.conv.min_grad, 'disp': False, 'maxls': 40}
         res = minimize(self.minimize_opt_fun, x0, method=method, jac=jac, options=options)
         uks = np.reshape(res['x'], (len(self.sys_para.ops_c), len(res['x']) // len(self.sys_para.ops_c)))
